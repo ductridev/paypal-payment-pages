@@ -69,7 +69,7 @@ function display_settings()
         </div>
         <div style="display: flex; margin-bottom: 15px;">
             <label for="defaultamount" style="width: 100px;">Default Amount</label>
-            <input style="width: 80%;" id="defaultamount" value="<?php echo PAYPAL_ORDERS_DEFAULT_AMOUNT ?>">
+            <input style="width: 80%;" id="defaultamount" value="<?php echo PAYPAL_DEFAULT_AMOUNT ?>">
         </div>
         <div style="display: flex; margin-bottom: 15px;">
             <label for="environment" style="width: 100px;">Environment</label>
@@ -84,7 +84,7 @@ function display_settings()
             $client_id = isset($row['client_id']) ? $row['client_id'] : PAYPAL_DEFAULT_CLIENT_ID;
             $app_sceret = isset($row['app_sceret']) ? $row['app_sceret'] : PAYPAL_DEFAULT_APP_SECRET;
             $currency = isset($row['currency']) ? $row['currency'] : PAYPAL_DEFAULT_CURRENCY;
-            $default_amount = isset($row['default_amount']) ? $row['default_amount'] : PAYPAL_ORDERS_DEFAULT_AMOUNT;
+            $default_amount = isset($row['default_amount']) ? $row['default_amount'] : PAYPAL_DEFAULT_AMOUNT;
         ?>
             <h2>Bestar Host Paypal Payment Settings</h2>
             <p>If you leave these fields empty, plugin will use default value</p>
@@ -120,7 +120,7 @@ function display_settings()
             let client_id = document.getElementById("clientid").value === '' ? '<?php echo PAYPAL_DEFAULT_CLIENT_ID ?>' : document.getElementById("clientid").value;
             let app_sceret = document.getElementById("appsceret").value === '' ? '<?php echo PAYPAL_DEFAULT_APP_SECRET ?>' : document.getElementById("appsceret").value;
             let currency = document.getElementById("currency").value === '' ? '<?php echo PAYPAL_DEFAULT_CURRENCY ?>' : document.getElementById("currency").value;
-            let default_amount = document.getElementById("defaultamount").value === '' ? '<?php echo PAYPAL_ORDERS_DEFAULT_AMOUNT ?>' : document.getElementById("defaultamount").value;
+            let default_amount = document.getElementById("defaultamount").value === '' ? '<?php echo PAYPAL_DEFAULT_AMOUNT ?>' : document.getElementById("defaultamount").value;
             let environment = document.getElementById("environment").value === '' ? '<?php echo PAYPAL_API_URL ?>' : document.getElementById("environment").value;
             fetch("/wp-content/plugins/bestarhost-paypal-payment/save-settings.php", {
                 method: "POST",
@@ -152,15 +152,17 @@ function payment_shortcode_content()
         <?php
         if (empty($result)) {
         ?>
+            <script src="https://www.paypal.com/sdk/js?client-id=<?php echo PAYPAL_DEFAULT_CLIENT_ID ?>&currency=<?php echo PAYPAL_DEFAULT_CURRENCY ?>&components=buttons&locale=en_US"></script>
             <div style="display: flex; margin-bottom: 25px;">
                 <label for="amount" style="margin-right: auto;"> Enter Amount (<?php echo PAYPAL_DEFAULT_CURRENCY ?>) </label>
-                <input id="amount" type="text" name="amount" value="<?php echo PAYPAL_ORDERS_DEFAULT_AMOUNT ?>" style="margin-left: auto; margin-right: auto; border-radius: 7px; border: blue 1px solid;">
+                <input id="amount" type="text" name="amount" value="<?php echo PAYPAL_DEFAULT_AMOUNT ?>" style="margin-left: auto; margin-right: auto; border-radius: 7px; border: blue 1px solid;">
                 <br />
             </div>
             <?php
         } else {
             foreach ($result as $row) {
             ?>
+                <script src="https://www.paypal.com/sdk/js?client-id=<?php echo $row['client_id'] ?>&currency=<?php echo $row['currency'] ?>&components=buttons&locale=en_US"></script>
                 <div style="display: flex; margin-bottom: 25px;">
                     <label for="amount" style="margin-right: auto;"> Enter Amount (<?php echo $row['currency'] ?>) </label>
                     <input id="amount" type="text" name="amount" value="<?php echo $row['default_amount'] ?>" style="margin-left: auto; margin-right: auto; border-radius: 7px; border: blue 1px solid;">
@@ -222,7 +224,6 @@ function payment_shortcode_content()
             </div>
             <div id="admin" style="transition: all 1s linear;">
                 <div id="paypal-button-container-admin"></div>
-                <script src="https://www.paypal.com/sdk/js?client-id=ATUWdT_p5Y2HvkD-wft1RsC7U143RtSbOQf2gutNiCCzglFI7_lNgyJ2S26fdfU2aAUhHTP1wpA5Y46c&currency=USD&components=buttons&locale=en_US"></script>
                 <script>
                     paypal
                         .Buttons({
@@ -271,7 +272,6 @@ function payment_shortcode_content()
                 <input id="requester" placeholder="Receiver Email" type="text" name="requester" style="margin-left: auto; margin-right: auto; border-radius: 7px; border: blue 1px solid; margin-bottom: 25px; width: 100%;">
                 <br />
                 <button style="width: fit-content; padding: 5px 25px; margin-left: auto; margin-right: auto; border-radius: 7px; border: blue 1px solid; background-color: white;" onclick="submitPayout(this)">Submit</button>
-                <script src="https://www.paypal.com/sdk/js?client-id=ATUWdT_p5Y2HvkD-wft1RsC7U143RtSbOQf2gutNiCCzglFI7_lNgyJ2S26fdfU2aAUhHTP1wpA5Y46c&currency=USD&components=buttons&locale=en_US"></script>
                 <script>
                     function submitPayout(event) {
                         let div = document.createElement('div');
@@ -419,12 +419,23 @@ function request_shortcode_content()
     if (!empty($result)) {
         foreach ($result as $row) {
             if ($row['status'] == 'pending') {
+                $result1 = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "Paypal_Settings LIMIT 1", ARRAY_A);
+                if (empty($result1)) {
     ?>
+                    <script src="https://www.paypal.com/sdk/js?client-id=<?php echo PAYPAL_DEFAULT_CLIENT_ID ?>&currency=<?php echo PAYPAL_DEFAULT_CURRENCY ?>&components=buttons&locale=en_US"></script>
+                    <?php
+                } else {
+                    foreach ($result1 as $row) {
+                    ?>
+                        <script src="https://www.paypal.com/sdk/js?client-id=<?php echo $row['client_id'] ?>&currency=<?php echo $row['currency'] ?>&components=buttons&locale=en_US"></script>
+                <?php
+                    }
+                }
+                ?>
                 <input type="hidden" id="amount" value="<?php echo $row['amount']; ?>">
                 <input type="hidden" id="currency" value="<?php echo $row['currency']; ?>">
                 <input type="hidden" id="request_id" value="<?php echo $_GET['request_id'] ?>">
                 <div id="paypal-button-container"></div>
-                <script src="https://www.paypal.com/sdk/js?client-id=ATUWdT_p5Y2HvkD-wft1RsC7U143RtSbOQf2gutNiCCzglFI7_lNgyJ2S26fdfU2aAUhHTP1wpA5Y46c&currency=USD&components=buttons&locale=en_US"></script>
                 <script>
                     paypal
                         .Buttons({
